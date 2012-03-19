@@ -1,11 +1,12 @@
 define([
-  'backbone',
   'underscore',
+  'backbone',
   'backbone-mediator'
-], function (Backbone, _) {
+], function (_, Backbone) {
 
   Backbone.Mediator.subscribe('shortcut:add', this.addShortcuts, this);
   Backbone.Mediator.subscribe('shortcut:remove', this.removeShortcuts, this);
+
   $(document).keydown($.proxy(this.document_key, this));
 
   var shortcutsStack = {};
@@ -48,7 +49,7 @@ define([
     setup: function(){
       //| > Delegate shorcuts to shortcut manager
       Backbone.Mediator.publish('shortcut:add', this.shortcuts, this);
-      this._super('setup', arguments);
+      if (this._super) this._super('setup', arguments);
     }
   });
 
