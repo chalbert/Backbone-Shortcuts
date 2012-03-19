@@ -1,11 +1,12 @@
 # Backbone-Shortcuts
 
-DEPENDENCIES:
+Shortcuts management with nesting support
+
+### DEPENDENCIES:
 
 * [Backbone-Mediator](https://github.com/chalbert/Backbone-Mediator)
 * [Underscore-Key](https://github.com/chalbert/Underscore-Keys)
 
-Shortcuts management with nesting support
  
 ### Setting shortcuts
  
@@ -18,10 +19,18 @@ Shortcuts are set as a hash of *key* & *function name* on your views.
         right: 'next_click',
         escape: 'back',
         backspace: 'back'
-      }
+      },
+      
+      previous_click: function(){...},
+      next_click: function(){...},
+      back: function(){...}
       
     });
- 
+    
+For more details on supported special keys, see [Underscore-Key](https://github.com/chalbert/Underscore-Keys)
+
+
+
 ### Shortcut nesting
 
 Only a single shortcut can be linked to one key at a time. If more than one shortcut is binded to one key, the latest 
