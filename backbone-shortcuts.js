@@ -1,12 +1,18 @@
 define([
-  'libs/vendor/backbone/backbone',
+  'backbone',
   'underscore',
-  'backbone-mediator'
+  'backbone_super',
+  'backbone-mediator',
+  'backbone-multiviews',
+  'underscore-keys'
 ], function (Backbone, _) {
 
   $(document).keydown($.proxy(document_keydown, this));
 
   var shortcutsStack = {};
+
+  Backbone.Mediator.subscribe('shortcuts:add', addShortcuts, this);
+  Backbone.Mediator.subscribe('shortcuts:remove', removeShortcuts, this);
 
   function document_keydown (e){
     if(!document.activeElement || !$(document.activeElement).is('body')) return;
@@ -46,9 +52,14 @@ define([
   Backbone.View = Backbone.View.extend({
     setup: function(){
       //| > Delegate shorcuts to shortcut manager
-      Backbone.Mediator.subscribe('shortcut:add', addShortcuts, this);
-      Backbone.Mediator.subscribe('shortcut:remove', removeShortcuts, this);
+      Backbone.Mediator.publish('shortcuts:add', this.shortcuts, this);
       this._super('setup', arguments);
+    },
+
+    clean: function(){
+      // Remove shortcuts
+      Backbone.Mediator.publish('shortcuts:remove', this.shortcuts, this);
+      this._super('clean', arguments);
     }
   });
 
