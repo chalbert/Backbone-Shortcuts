@@ -58,15 +58,15 @@
      * @param {Object} shortcuts Hash of shortcuts
      * @param {Object} view
      */
-    delegateShortcuts: function(shortcuts, view){
+    delegateShortcuts: function(shortcuts, context){
       if (!shortcuts) return;
       var shortcutObject = {};
       _.each(shortcuts, function(shortcut, key) {
         shortcutsStack[key] || (shortcutsStack[key] = []);
 
         shortcutObject = {
-          fn: view[shortcut],
-          view: view
+          fn: context[shortcut],
+          context: context
         };
 
         shortcutsStack[key].unshift(shortcutObject);
@@ -74,20 +74,20 @@
     },
 
     /**
-     * Undelegate a view shortcuts
+     * Undelegate a context shortcuts
      *
      * @param {Object} shortcuts Hash of shortcuts
-     * @param {Object} view
+     * @param {Object} context
      */
-    undelegateShortcuts: function(shortcuts, view) {
+    undelegateShortcuts: function(shortcuts, context) {
       if (!shortcuts) return;
       var stack;
       _.each(shortcuts, function(shortcut, key) {
         stack = shortcutsStack[key];
         if (stack) {
           for (var n = 0; n < stack.length; n++) {
-            if (stack[n].fn === view[shortcut]
-                && stack[n].view === view) stack.splice(n, 1);
+            if (stack[n].fn === context[shortcut]
+                && stack[n].context === context) stack.splice(n, 1);
           }
         }
       }, this);
