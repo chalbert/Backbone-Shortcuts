@@ -1,69 +1,119 @@
-define([
-  'backbone',
-  'underscore',
-  'backbone_super',
-  'backbone-mediator',
-  'backbone-multiviews',
-  'underscore-keys'
-], function (Backbone, _) {
+/**
+ * |--------------------|
+ * | Backbone-Shortcuts |
+ * |--------------------|
+ *  Backbone-Shortcuts is freely distributable under the MIT license.
+ *
+ *  <a href="https://github.com/chalbert/Backbone-Shortcuts">More details & documentation</a>
+ *
+ * @author Nicolas Gilbert
+ *
+ * @requires _
+ * @requires Backbone
+ * @requires Underscore-Keys - https://github.com/chalbert/Underscore-Keys
+ */
 
-  $(document).keydown($.proxy(document_keydown, this));
+(function(factory){
+  'use strict';
 
-  var shortcutsStack = {};
-
-  Backbone.Mediator.subscribe('shortcuts:add', addShortcuts, this);
-  Backbone.Mediator.subscribe('shortcuts:remove', removeShortcuts, this);
-
-  function document_keydown (e){
-    if(!document.activeElement || !$(document.activeElement).is('body')) return;
-
-    var key = _.getKey(e.which);
-    if (shortcutsStack[key] && shortcutsStack[key].length) {
-      e.stopPropagation();
-      e.preventDefault();
-      var shortcut = shortcutsStack[key][0];
-      if (shortcut.fn) shortcut.fn.apply(shortcut.context, arguments);
-    }
+  if (typeof define === 'function' && define.amd) {
+    define(['underscore', 'backbone', 'underscore-keys'], factory);
+  } else {
+    factory(_, Backbone);
   }
 
-  function addShortcuts (shortcuts, context){
-    removeShortcuts(shortcuts, context);
-    _.each(shortcuts, function(shortcut, key) {
-      shortcutsStack[key] || (shortcutsStack[key] = []);
-      shortcutsStack[key].unshift({
-        fn: context[shortcut],
-        context: context
-      });
-    }, this);
-  }
+})(function (_, Backbone){
+  'use strict';
 
-  function removeShortcuts(shortcuts, context) {
-    var stack;
-    _.each(shortcuts, function(shortcut, key) {
-      stack = shortcutsStack[key]
-      if (stack) {
-        for (var n = 0; n < stack.length; n++) {
-          if (stack[n].fn === context[shortcut]) stack.splice(n, 1);
-        }
+
+  var /** @borrows Backbone.View#delegateEvents */
+      delegateEvents = Backbone.View.prototype.delegateEvents,
+      /** @borrows Backbone.View#delegateEvents */
+      undelegateEvents = Backbone.View.prototype.undelegateEvents,
+      shortcutsStack = {};
+
+  Backbone.Shortcuts = {
+
+    /**
+     * Global callback for shortcut delegation
+     *
+     * @param {Object} e Event object
+     */
+    applyShortcuts: function(e){
+      if(!document.activeElement || !$(document.activeElement).is('body')) return;
+
+      var shortcut,
+          key = _.getKey(e.which);
+      if (shortcutsStack[key] && shortcutsStack[key].length) {
+        e.stopPropagation();
+        e.preventDefault();
+        shortcut = shortcutsStack[key][0];
+        if (shortcut.fn) shortcut.fn.apply(shortcut.context, arguments);
       }
-    }, this);
-  }
-
-  Backbone.View = Backbone.View.extend({
-    setup: function(){
-      //| > Delegate shorcuts to shortcut manager
-      Backbone.Mediator.publish('shortcuts:add', this.shortcuts, this);
-      this._super('setup', arguments);
     },
 
-    clean: function(){
-      // Remove shortcuts
-      Backbone.Mediator.publish('shortcuts:remove', this.shortcuts, this);
-      this._super('clean', arguments);
+    /**
+     * Delegate a view shortcuts
+     * 
+     * @param {Object} shortcuts Hash of shortcuts
+     * @param {Object} view
+     */
+    delegateShortcuts: function(shortcuts, view){
+      if (!shortcuts) return;
+      var shortcutObject = {};
+      _.each(shortcuts, function(shortcut, key) {
+        shortcutsStack[key] || (shortcutsStack[key] = []);
+
+        shortcutObject = {
+          fn: view[shortcut],
+          view: view
+        };
+
+        shortcutsStack[key].unshift(shortcutObject);
+      }, this);
+    },
+
+    /**
+     * Undelegate a view shortcuts
+     *
+     * @param {Object} shortcuts Hash of shortcuts
+     * @param {Object} view
+     */
+    undelegateShortcuts: function(shortcuts, view) {
+      if (!shortcuts) return;
+      var stack;
+      _.each(shortcuts, function(shortcut, key) {
+        stack = shortcutsStack[key];
+        if (stack) {
+          for (var n = 0; n < stack.length; n++) {
+            if (stack[n].fn === view[shortcut]
+                && stack[n].view === view) stack.splice(n, 1);
+          }
+        }
+      }, this);
+    }
+
+  };
+
+  /**
+   * @lends Backbone.View.prototype
+   */
+  _.extend(Backbone.View.prototype, {
+    delegateEvents: function(){
+      delegateEvents.apply(this, arguments);
+      Backbone.Shortcuts.delegateShortcuts(this.shortcuts, this);
+    },
+    undelegateEvents: function(){
+      undelegateEvents.apply(this, arguments);
+      Backbone.Shortcuts.undelegateShortcuts(this.shortcuts, this);
     }
   });
 
-  return Backbone;
+  /**
+   * Event binding for global shortcuts callback
+   */
+  $(document).keydown($.proxy(Backbone.Shortcuts.applyShortcuts, this));
 
+  return Backbone;
 
 });
